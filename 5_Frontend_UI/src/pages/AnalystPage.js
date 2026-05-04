@@ -60,15 +60,15 @@ export default function AnalystPage() {
         <div className="form-group">
           <label>Tournament</label>
           <select value={tournament} onChange={(e) => setTournament(e.target.value)}>
-            <option value="">Tất cả</option>
+            <option value="">All Tournaments</option>
             <option value="LCK Spring 2025">LCK Spring 2025</option>
             <option value="Worlds 2024">Worlds 2024</option>
           </select>
         </div>
         <div className="form-group" style={{ flex: 1 }}>
-          <label>Tìm kiếm</label>
+          <label>Search</label>
           <input
-            placeholder={view === "players" ? "ID, player, team hoặc role..." : "ID, tên team hoặc tournament..."}
+            placeholder={view === "players" ? "ID, player, team or role..." : "ID, team name or tournament..."}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -80,7 +80,7 @@ export default function AnalystPage() {
               style={{ background: "#2a2a4a", fontSize: "0.85rem" }}
               onClick={() => setSearch("")}
             >
-              Xóa
+              Clear
             </button>
           </div>
         )}
@@ -88,7 +88,7 @@ export default function AnalystPage() {
           <button
             className="btn-primary"
             style={{ background: view === "players" ? "#e94560" : "#2a2a4a" }}
-            onClick={() => { setView("players"); setSearch(""); }}
+            onClick={() => { setView("players" ); setSearch(""); }}
           >
             Players
           </button>
@@ -105,11 +105,11 @@ export default function AnalystPage() {
       <div className="stats-grid">
         <div className="stat-card">
           <div className="stat-value">{search ? filteredPlayers.length : players.length}</div>
-          <div className="stat-label">{search ? "Kết quả tìm kiếm" : "Tổng player"}</div>
+          <div className="stat-label">{search ? "Search Results" : "Total Players"}</div>
         </div>
         <div className="stat-card">
           <div className="stat-value">{players[0]?.name || "—"}</div>
-          <div className="stat-label">KDA cao nhất</div>
+          <div className="stat-label">Highest KDA</div>
         </div>
         <div className="stat-card">
           <div className="stat-value">{players[0]?.kda_score || "—"}</div>
@@ -122,7 +122,7 @@ export default function AnalystPage() {
       </div>
 
       {loading ? (
-        <div className="loading">Đang tải dữ liệu từ MongoDB...</div>
+        <div className="loading">Loading data from MongoDB...</div>
       ) : view === "players" ? (
         <div>
           {filteredPlayers.length > 0 ? (
@@ -138,7 +138,7 @@ export default function AnalystPage() {
             ))
           ) : (
             <div style={{ textAlign: "center", color: "#8892a4", padding: "2rem" }}>
-              Không tìm thấy "{search}"
+              No player found for "{search}"
             </div>
           )}
         </div>
@@ -150,8 +150,8 @@ export default function AnalystPage() {
                 <th>ID</th>
                 <th>Team</th>
                 <th>Tournament</th>
-                <th>Trận</th>
-                <th>Thắng</th>
+                <th>Matches</th>
+                <th>Wins</th>
                 <th>Win Rate</th>
                 <th>Avg K</th>
                 <th>Avg D</th>
@@ -180,7 +180,7 @@ export default function AnalystPage() {
               )) : (
                 <tr>
                   <td colSpan={9} style={{ textAlign: "center", color: "#8892a4", padding: "2rem" }}>
-                    Không tìm thấy "{search}"
+                    No team found for "{search}"
                   </td>
                 </tr>
               )}

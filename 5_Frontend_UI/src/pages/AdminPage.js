@@ -42,9 +42,9 @@ export default function AdminPage() {
       {/* Danh sách roster */}
       <div className="card">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-          <h3>Danh sách Roster ({rosters.length} đăng ký)</h3>
+          <h3>Roster List ({rosters.length} register)</h3>
           <input
-            placeholder="Tìm player hoặc team..."
+            placeholder="Find player or team..."
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
             style={{ width: "220px" }}
@@ -52,7 +52,7 @@ export default function AdminPage() {
         </div>
 
         {loading ? (
-          <div className="loading">Đang tải...</div>
+          <div className="loading">loading...</div>
         ) : (
           <div className="table-wrapper">
             <table>
@@ -63,7 +63,7 @@ export default function AdminPage() {
                   <th>Role</th>
                   <th>Team</th>
                   <th>Season</th>
-                  <th>Số áo</th>
+                  <th>Jersey Number</th>
                   <th>Starter</th>
                 </tr>
               </thead>
@@ -84,7 +84,7 @@ export default function AdminPage() {
                   </tr>
                 ))}
                 {filtered.length === 0 && (
-                  <tr><td colSpan={7} style={{ textAlign: "center", color: "#8892a4" }}>Không tìm thấy kết quả</td></tr>
+                  <tr><td colSpan={7} style={{ textAlign: "center", color: "#8892a4" }}>No results found</td></tr>
                 )}
               </tbody>
             </table>

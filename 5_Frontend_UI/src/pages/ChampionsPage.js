@@ -49,19 +49,19 @@ export default function ChampionsPage() {
       <div className="stats-grid">
         <div className="stat-card">
           <div className="stat-value">{data.length}</div>
-          <div className="stat-label">Tổng tướng</div>
+          <div className="stat-label">Total number of champions</div>
         </div>
         <div className="stat-card">
           <div className="stat-value">{mostPicked}</div>
-          <div className="stat-label">Pick nhiều nhất</div>
+          <div className="stat-label">Most picked champion</div>
         </div>
         <div className="stat-card">
           <div className="stat-value">{highestWR ? highestWR.champion : "—"}</div>
-          <div className="stat-label">Win rate cao nhất</div>
+          <div className="stat-label">Highest win rate</div>
         </div>
         <div className="stat-card">
           <div className="stat-value">{highestKDA ? highestKDA.champion : "—"}</div>
-          <div className="stat-label">KDA cao nhất</div>
+          <div className="stat-label">Highest KDA</div>
         </div>
       </div>
 
@@ -69,7 +69,7 @@ export default function ChampionsPage() {
       {!loading && (
         <div style={{ marginBottom: "2rem" }}>
           <h2 style={{ fontSize: "16px", fontWeight: 500, color: "var(--color-text-secondary)", marginBottom: "12px" }}>
-            Tất cả tướng — sắp xếp theo lượt pick
+            All Champions — Sorted by Pick Count
           </h2>
           <div style={{
             display: "flex",
@@ -113,9 +113,9 @@ export default function ChampionsPage() {
             ))}
           </div>
           <div style={{ marginTop: "10px", display: "flex", gap: "16px", fontSize: "11px", color: "#8892a4" }}>
-            <span><span style={{ color: "#e94560" }}>■</span> Pick cao</span>
-            <span><span style={{ color: "#ffd700" }}>■</span> Pick trung bình</span>
-            <span><span style={{ color: "#8892a4" }}>■</span> Pick thấp</span>
+            <span><span style={{ color: "#e94560" }}>■</span> Hot picks</span>
+            <span><span style={{ color: "#ffd700" }}>■</span> Average picks</span>
+            <span><span style={{ color: "#8892a4" }}>■</span> Low picks</span>
           </div>
         </div>
       )}
@@ -123,15 +123,15 @@ export default function ChampionsPage() {
       {/* Filter + Search + Sort */}
       <div className="filter-bar">
         <div className="form-group" style={{ flex: 1 }}>
-          <label>Tìm kiếm tướng</label>
+          <label>Search champion</label>
           <input
-            placeholder="Tên tướng... (Jinx, Lee Sin, Thresh...)"
+            placeholder="Name of champion... (Jinx, Lee Sin, Thresh...)"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
         <div className="form-group">
-          <label>Sắp xếp theo</label>
+          <label>Sort by</label>
           <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
             <option value="pick_count">Pick Rate</option>
             <option value="win_rate">Win Rate</option>
@@ -147,7 +147,7 @@ export default function ChampionsPage() {
               style={{ background: "#2a2a4a", fontSize: "0.85rem" }}
               onClick={() => setSearch("")}
             >
-              Xóa
+              Clear
             </button>
           </div>
         )}
@@ -155,14 +155,14 @@ export default function ChampionsPage() {
 
       {/* Bảng xếp hạng chi tiết */}
       {loading ? (
-        <div className="loading">Đang tải dữ liệu từ MongoDB...</div>
+        <div className="loading">Loading data from MongoDB...</div>
       ) : (
         <div className="table-wrapper">
           <table>
             <thead>
               <tr>
-                <th>Hạng</th>
-                <th>Tướng</th>
+                <th>Rank</th>
+                <th>Champion</th>
                 <th>Picks</th>
                 <th>Pick Rate</th>
                 <th>Wins</th>
@@ -172,7 +172,7 @@ export default function ChampionsPage() {
                 <th>Avg D</th>
                 <th>Avg A</th>
                 <th>Avg Gold</th>
-                <th>Người dùng</th>
+                <th>Played by</th>
               </tr>
             </thead>
             <tbody>
@@ -213,7 +213,7 @@ export default function ChampionsPage() {
               )) : (
                 <tr>
                   <td colSpan={12} style={{ textAlign: "center", color: "#8892a4", padding: "2rem" }}>
-                    Không tìm thấy tướng "{search}"
+                    No champion found for "{search}"
                   </td>
                 </tr>
               )}

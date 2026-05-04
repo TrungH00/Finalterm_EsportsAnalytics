@@ -18,7 +18,7 @@ export default function RosterForm({ onSuccess }) {
 
   const handleSubmit = async () => {
     if (!form.player_id || !form.team_id || !form.season_id) {
-      setMessage({ type: "error", text: "Vui lòng điền đầy đủ Player ID, Team ID và Season ID." });
+      setMessage({ type: "error", text: "Please fill in all the information: Player ID, Team ID and Season ID." });
       return;
     }
 
@@ -38,7 +38,7 @@ export default function RosterForm({ onSuccess }) {
       if (onSuccess) onSuccess();
 
     } catch (err) {
-      const errMsg = err.response?.data?.message || "Lỗi kết nối server.";
+      const errMsg = err.response?.data?.message || "Error connecting to server.";
       setMessage({ type: "error", text: errMsg });
     } finally {
       setLoading(false);
@@ -47,7 +47,7 @@ export default function RosterForm({ onSuccess }) {
 
   return (
     <div className="card">
-      <h3 style={{ marginBottom: "1.2rem", color: "#e94560" }}>Đăng ký Player vào Roster</h3>
+      <h3 style={{ marginBottom: "1.2rem", color: "#e94560" }}>Register Player into Roster</h3>
 
       {message && (
         <div className={`alert alert-${message.type === "success" ? "success" : "error"}`}>
@@ -58,7 +58,7 @@ export default function RosterForm({ onSuccess }) {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
         <div className="form-group">
           <label>Player ID *</label>
-          <input name="player_id" value={form.player_id} onChange={handleChange} placeholder="VD: 1" />
+          <input name="player_id" value={form.player_id} onChange={handleChange} placeholder=": 1" />
         </div>
         <div className="form-group">
           <label>Team ID *</label>
@@ -69,13 +69,13 @@ export default function RosterForm({ onSuccess }) {
           <input name="season_id" value={form.season_id} onChange={handleChange} placeholder="1=LCK Spring 2025, 2=Worlds 2024" />
         </div>
         <div className="form-group">
-          <label>Số áo</label>
-          <input name="jersey_number" value={form.jersey_number} onChange={handleChange} placeholder="VD: 10" />
+          <label>Jersey Number</label>
+          <input name="jersey_number" value={form.jersey_number} onChange={handleChange} placeholder="(e.g., 10)" />
         </div>
       </div>
 
       <button className="btn-primary" onClick={handleSubmit} disabled={loading}>
-        {loading ? "Đang xử lý..." : "Đăng ký"}
+        {loading ? "Processing..." : "Register"}
       </button>
     </div>
   );
