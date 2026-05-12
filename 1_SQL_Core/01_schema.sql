@@ -1,17 +1,17 @@
 -- ============================================================
 -- FILE: 01_schema.sql
--- MÔ TẢ: Tạo toàn bộ cấu trúc bảng cho Esports Analytics
+-- Description: Create entire table structure for Esports Analytics
 --        Game: League of Legends
 --        Engine: MS SQL Server (T-SQL)
 --
--- THỨ TỰ CHẠY: File này phải chạy TRƯỚC tất cả file khác
+-- EXECUTION ORDER: This file must run BEFORE all other files
 --
--- CÁC BẢNG:
---   1. Seasons    — Mùa giải (LCK Spring 2025, Worlds 2024)
---   2. Teams      — Đội thi đấu (T1, Cloud9, Fnatic, G2)
---   3. Players    — Game thủ (Faker, Caps, Rekkles...)
---   4. Rosters    — Đăng ký thi đấu
---   5. Matches    — Kết quả trận đấu
+-- TABLES:
+--   1. Seasons    - Tournament seasons (LCK Spring 2025, Worlds 2024)
+--   2. Teams      - Competing teams (T1, Cloud9, Fnatic, G2)
+--   3. Players    - Esports players (Faker, Caps, Rekkles...)
+--   4. Rosters    - Tournament registrations
+--   5. Matches    - Match results
 -- ============================================================
 USE esports_db;
 GO

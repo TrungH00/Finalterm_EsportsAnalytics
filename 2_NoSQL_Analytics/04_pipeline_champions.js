@@ -15,6 +15,20 @@ const COLLECTION = "MatchStats";
 //   4. $group champion     → gom theo tên tướng
 //   5. $addFields          → tính avg stats + pick rate
 //   6. $sort pick_count    → tướng được pick nhiều nhất lên đầu
+// FILE: 04_pipeline_champions.js
+// Description: Calculate statistics for each champion across all matches
+//
+// STAGES:
+//   1. $unwind teams       -> flatten teams[]
+//   2. $unwind players     -> flatten players[]
+//   3. $match              -> exclude empty edge cases
+//   4. $group champion     -> group by champion name
+//   5. $addFields          -> calculate avg stats + pick rate
+//   6. $sort pick_count    -> sort by most picked champions first
+  // STAGE 4: Group by champion
+  // Gather player names that usually use this champion
+  // STAGE 5: Calculate win rate and KDA
+  // STAGE 6: Sort by pick_count descending
 //   7. $project            → format output
 // ============================================================
 

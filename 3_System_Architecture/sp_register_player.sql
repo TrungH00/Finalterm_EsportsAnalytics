@@ -1,6 +1,6 @@
 -- ============================================================
 -- FILE: sp_register_player.sql
--- MÔ TẢ: Stored Procedure đăng ký player vào roster
+-- Description: Stored Procedure to register player into roster
 --        Kiểm tra eligibility trước khi INSERT atomically
 --        Engine: MS SQL Server (T-SQL)
 --
@@ -14,6 +14,9 @@
 --     Trigger là lớp bảo vệ cuối cùng ở tầng DB
 -- ============================================================
 
+USE esports_db;
+GO
+
 IF OBJECT_ID('dbo.sp_register_player', 'P') IS NOT NULL
     DROP PROCEDURE dbo.sp_register_player;
 GO
@@ -24,9 +27,9 @@ CREATE PROCEDURE dbo.sp_register_player
     @team_id        INT,
     @season_id      INT,
     @jersey_number  INT     = NULL,  -- optional
-    @is_starter     BIT     = 1,     -- mặc định là starter
+    @is_starter     BIT     = 1,     -- default is starter
 
-    -- Output parameters — trả về kết quả cho Backend API
+    -- Output parameters - return results to Backend API
     @success        BIT         OUTPUT,
     @message        NVARCHAR(500) OUTPUT,
     @roster_id      INT         OUTPUT
@@ -34,7 +37,7 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-    -- Khởi tạo output
+    -- Initialize output
     SET @success   = 0;
     SET @message   = N'';
     SET @roster_id = NULL;
@@ -44,7 +47,7 @@ BEGIN
     -- --------------------------------------------------------
     IF NOT EXISTS (SELECT 1 FROM dbo.Players WHERE player_id = @player_id AND is_active = 1)
     BEGIN
-        SET @message = N'Lỗi: Player không tồn tại hoặc đã ngừng hoạt động.';
+        SET @message = N'Error: Player does not exist or is inactive.';
         RETURN;
     END
 
@@ -53,7 +56,7 @@ BEGIN
     -- --------------------------------------------------------
     IF NOT EXISTS (SELECT 1 FROM dbo.Teams WHERE team_id = @team_id AND is_active = 1)
     BEGIN
-        SET @message = N'Lỗi: Team không tồn tại hoặc đã giải thể.';
+        SET @message = N'Error: Team does not exist or has been disbanded.';
         RETURN;
     END
 
@@ -62,14 +65,14 @@ BEGIN
     -- --------------------------------------------------------
     IF NOT EXISTS (SELECT 1 FROM dbo.Seasons WHERE season_id = @season_id AND is_active = 1)
     BEGIN
-        SET @message = N'Lỗi: Season không tồn tại hoặc đã kết thúc.';
+        SET @message = N'Error: Season does not exist or has ended.';
         RETURN;
     END
 
     -- --------------------------------------------------------
-    -- BƯỚC 4: Kiểm tra eligibility
-    --         Player đã đăng ký team nào trong season này chưa?
-    --         Đây là business rule chính của SP
+    -- STEP 4: Check eligibility
+    --         Has player already registered a team in this season?
+    --         This is the main business rule for SP
     -- --------------------------------------------------------
     DECLARE @existingTeamName NVARCHAR(100);
 
@@ -87,17 +90,17 @@ BEGIN
         SELECT @playerNick = nickname  FROM dbo.Players WHERE player_id = @player_id;
         SELECT @seasonName = season_name FROM dbo.Seasons WHERE season_id = @season_id;
 
-        SET @message = N'Lỗi: Player "' + @playerNick +
-                       N'" đã đăng ký cho team "' + @existingTeamName +
-                       N'" trong season "' + @seasonName + N'". ' +
-                       N'Không thể đăng ký thêm cho team khác.';
+        SET @message = N'Error: Player "' + @playerNick +
+                       N'" is already registered for team "' + @existingTeamName +
+                       N'" in season "' + @seasonName + N'". ' +
+                       N'Cannot register for another team.';
         RETURN;
     END
 
     -- --------------------------------------------------------
-    -- BƯỚC 5: Tất cả kiểm tra pass → INSERT atomically
-    --         Dùng transaction để đảm bảo ACID
-    --         Nếu có lỗi bất ngờ → ROLLBACK toàn bộ
+    -- STEP 5: All checks pass -> INSERT atomically
+    --         Use transaction to guarantee ACID
+    --         If unexpected error → ROLLBACK everything
     -- --------------------------------------------------------
     BEGIN TRANSACTION;
     BEGIN TRY
@@ -119,12 +122,12 @@ BEGIN
             @is_starter
         );
 
-        -- Lấy roster_id vừa tạo để trả về cho API
+        -- Get newly created roster_id to return to API
         SET @roster_id = SCOPE_IDENTITY();
 
         COMMIT TRANSACTION;
 
-        -- Trả về kết quả thành công
+        -- Return success result
         SET @success = 1;
 
         DECLARE @teamName2   NVARCHAR(100);
@@ -135,18 +138,18 @@ BEGIN
         SELECT @teamName2   = team_name   FROM dbo.Teams   WHERE team_id   = @team_id;
         SELECT @seasonName2 = season_name FROM dbo.Seasons WHERE season_id = @season_id;
 
-        SET @message = N'Thành công: Player "' + @playerNick2 +
+        SET @message = N'Success: Player "' + @playerNick2 +
                        N'" đã được đăng ký cho team "' + @teamName2 +
                        N'" trong season "' + @seasonName2 + N'".';
 
     END TRY
     BEGIN CATCH
-        -- Lỗi bất ngờ → rollback toàn bộ
+        -- Unexpected error → rollback everything
         IF @@TRANCOUNT > 0
             ROLLBACK TRANSACTION;
 
         SET @success = 0;
-        SET @message = N'Lỗi hệ thống: ' + ERROR_MESSAGE();
+        SET @message = N'System error: ' + ERROR_MESSAGE();
     END CATCH;
 END;
 GO
@@ -159,7 +162,7 @@ PRINT N'============================================================';
 PRINT N'TEST 1: Đăng ký hợp lệ — player mới vào SP season 1';
 PRINT N'============================================================';
 
--- Thêm player test
+-- Add test player
 INSERT INTO Players (player_code, nickname, role) VALUES ('SP_TEST', N'SPTestPlayer', N'Mid');
 DECLARE @testPid INT = SCOPE_IDENTITY();
 
@@ -185,8 +188,8 @@ PRINT N'============================================================';
 DECLARE @ok2  BIT, @msg2 NVARCHAR(500), @rid2 INT;
 EXEC dbo.sp_register_player
     @player_id     = @testPid,
-    @team_id       = 2,          -- Team Flash (khác team!)
-    @season_id     = 1,          -- VPS Spring 2025 (cùng season!)
+    @team_id       = 2,          -- Team Flash (different team!)
+    @season_id     = 1,          -- VPS Spring 2025 (same season!)
     @jersey_number = 88,
     @success       = @ok2  OUTPUT,
     @message       = @msg2 OUTPUT,
@@ -200,7 +203,7 @@ PRINT N'============================================================';
 PRINT N'TEST 3: Season không active';
 PRINT N'============================================================';
 
--- Thêm season đã kết thúc
+-- Add ended season
 INSERT INTO Seasons (season_name, start_date, end_date, is_active)
 VALUES (N'Old Season 2023', '2023-01-01', '2023-06-30', 0);
 DECLARE @oldSeason INT = SCOPE_IDENTITY();
@@ -209,7 +212,7 @@ DECLARE @ok3  BIT, @msg3 NVARCHAR(500), @rid3 INT;
 EXEC dbo.sp_register_player
     @player_id     = @testPid,
     @team_id       = 1,
-    @season_id     = @oldSeason,  -- season đã kết thúc
+    @season_id     = @oldSeason,  -- ended season
     @success       = @ok3  OUTPUT,
     @message       = @msg3 OUTPUT,
     @roster_id     = @rid3 OUTPUT;

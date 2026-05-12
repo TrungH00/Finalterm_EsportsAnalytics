@@ -1,14 +1,14 @@
 // ============================================================
 // FILE: server.js
-// MÔ TẢ: Entry point — khởi động Express server
-//        Kết nối SQL + MongoDB, đăng ký routes
+// Description: Express server entry point
+//        Connects to SQL + MongoDB, registers routes
 // ============================================================
 
 require("dotenv").config();
 const express = require("express");
 const cors    = require("cors");
 
-// Import kết nối database
+// Import database connections
 const connectSQL   = require("./config/db_sql");
 const connectMongo = require("./config/db_mongo");
 
@@ -22,11 +22,15 @@ const PORT = process.env.PORT || 3000;
 
 // ── Middleware ───────────────────────────────────────────────
 app.use(cors({
-  origin: "http://localhost:3001",
+  origin: [/^http:\/\/localhost:\d+$/, /^http:\/\/127\.0\.0\.1:\d+$/],
   methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true,
-}));                    // cho phép Frontend gọi API
-app.use(express.json());            // parse JSON body
+}));                    // Allow frontend to call API
+app.use((req, res, next) => {
+  res.set("Content-Type", "application/json; charset=utf-8");
+  next();
+});
+app.use(express.json({ charset: "utf-8" }));            // Parse JSON body
 
 // ── Routes ──────────────────────────────────────────────────
 // /api/rosters  → rosterController  → sp_register_player (SQL)
@@ -39,7 +43,7 @@ app.use("/api/stats",   statRoutes);
 // ── Health check ────────────────────────────────────────────
 app.get("/", (req, res) => {
   res.json({
-    message: "Esports Analytics API đang chạy!",
+    message: "Esports Analytics API is running!",
     endpoints: {
       leaderboard:  "GET  /api/rank/leaderboard",
       teamStats:    "GET  /api/rank/teams",
@@ -53,19 +57,19 @@ app.get("/", (req, res) => {
 // ── Khởi động server ────────────────────────────────────────
 async function startServer() {
   try {
-    // Kết nối cả 2 database trước khi listen
+    // Connect both databases before listening
     await connectSQL();
     await connectMongo();
 
     app.listen(PORT, () => {
       console.log("=".repeat(50));
-      console.log(`✓ Server đang chạy tại http://localhost:${PORT}`);
+      console.log(`✓ Server is running at http://localhost:${PORT}`);
       console.log(`✓ SQL Server  : connected`);
       console.log(`✓ MongoDB     : connected`);
       console.log("=".repeat(50));
     });
   } catch (err) {
-    console.error("✗ Không thể khởi động server:", err);
+    console.error("✗ Failed to start server:", err);
     process.exit(1);
   }
 }

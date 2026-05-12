@@ -1,7 +1,7 @@
 // ============================================================
 // FILE: api/apiClient.js
-// MÔ TẢ: Axios client — gọi Backend API từ Frontend
-//        Tất cả request đều đi qua file này
+// Description: Axios client — call Backend API from Frontend
+//        All requests go through this file
 // ============================================================
 
 import axios from "axios";
@@ -11,19 +11,19 @@ const api = axios.create({
   timeout: 10000,
 });
 
-// ── MongoDB endpoints (statController — của B) ──────────────
+// ── MongoDB endpoints (statController — from B) ──────────────
 export const getKDAAll        = ()           => api.get("/stats/kda");
 export const getKDAByPlayer   = (playerId)   => api.get(`/stats/kda/${playerId}`);
 export const getTeamAvg       = (tournament) =>
   api.get("/stats/team-avg", { params: tournament ? { tournament } : {} });
 
-// ── SQL endpoints (rankController — của A) ──────────────────
+// ── SQL endpoints (rankController — from A) ─────────────────────
 export const getLeaderboard   = (season)     =>
   api.get("/rank/leaderboard", { params: season ? { season } : {} });
 export const getTeamRank      = (team, season) =>
   api.get("/rank/teams", { params: { ...(team && { team }), ...(season && { season }) } });
 
-// ── Roster endpoints (rosterController — của C) ─────────────
+// ── Roster endpoints (rosterController — from C) ──────────────────
 export const getRosters       = ()     => api.get("/rosters");
 export const registerPlayer   = (data) => api.post("/rosters/register", data);
 

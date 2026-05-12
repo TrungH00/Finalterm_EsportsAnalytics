@@ -1,23 +1,23 @@
 // ============================================================
 // FILE: controllers/statController.js
-// MÔ TẢ: Gọi MongoDB Aggregation Pipeline
-//        Đây là phần của Member B — ownership của bạn
+// Description: Call MongoDB Aggregation Pipeline
+//        This is part of Member B — your ownership
 //
 // ENDPOINTS:
-//   GET /api/stats/kda           → KDA tất cả player
-//   GET /api/stats/kda/:playerId → KDA 1 player cụ thể
-//   GET /api/stats/team-avg      → Hiệu suất team
+//   GET /api/stats/kda           → KDA all players
+//   GET /api/stats/kda/:playerId → KDA 1 specific player
+//   GET /api/stats/team-avg      → Team performance
 //   GET /api/stats/team-avg?tournament=VPS Spring 2025
 // ============================================================
 
 const mongoose = require("mongoose");
 
-// Lấy collection trực tiếp từ mongoose connection
+// Get collection directly from mongoose connection
 function getCollection() {
   return mongoose.connection.db.collection("MatchStats");
 }
 
-// ── KDA PIPELINE (từ 02_pipeline_kda.js) ────────────────────
+// ── KDA PIPELINE (from 02_pipeline_kda.js) ────────────────────
 const kdaPipeline = [
   { $unwind: { path: "$teams", preserveNullAndEmptyArrays: false } },
   { $unwind: { path: "$teams.players", preserveNullAndEmptyArrays: true } },

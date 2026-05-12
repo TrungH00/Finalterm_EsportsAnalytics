@@ -1,17 +1,17 @@
 -- ============================================================
--- FILE: 04_leaderboard.sql
--- MÔ TẢ: Leaderboard xếp hạng player và team
---        Dùng Window Functions: DENSE_RANK, RANK, ROW_NUMBER
---        Engine: MS SQL Server (T-SQL)
+-- QUERY 1: GLOBAL PLAYER LEADERBOARD
+-- Rank all players by win rate (win percentage)
+-- Uses DENSE_RANK -> ties receive same rank; ranks are not skipped
+-- ============================================================
 --
--- THỨ TỰ CHẠY: Phải chạy SAU 01, 02, 03
+-- EXECUTION ORDER: Must run AFTER 01_schema.sql, 02_seed_data.sql, 03_trigger_roster.sql
 --
--- NỘI DUNG:
---   Query 1 — Global player leaderboard theo win rate
---   Query 2 — Leaderboard theo từng season (PARTITION BY)
---   Query 3 — Team leaderboard theo tổng trận thắng
---   Query 4 — Demo sự khác nhau DENSE_RANK vs RANK vs ROW_NUMBER
---             (chuẩn bị cho oral defense)
+-- CONTENT:
+--   Query 1 — Global player leaderboard by win rate
+--   Query 2 — Leaderboard partitioned by season (PARTITION BY)
+--   Query 3 — Team leaderboard by total wins
+--   Query 4 — Demo: difference between DENSE_RANK, RANK, and ROW_NUMBER
+--             (for oral defense preparation)
 -- ============================================================
 
 -- ============================================================
@@ -26,22 +26,22 @@ PRINT N'QUERY 1: Global Player Leaderboard (DENSE_RANK)';
 PRINT N'============================================================';
 
 WITH PlayerWinStats AS (
-    -- Bước 1: Tính tổng trận thắng và tổng trận của từng player
+    -- Step 1: Calculate total wins and total matches per player
     SELECT
         p.player_id,
         p.nickname,
         p.role,
         t.team_name,
 
-        -- Đếm tổng trận player tham gia (thắng + thua)
+        -- Count total matches the player participated in (wins + losses)
         COUNT(DISTINCT m.match_id) AS total_matches,
 
-        -- Đếm trận thắng: player thuộc team thắng
+        -- Count wins: player belongs to the winning team
         SUM(
             CASE WHEN r.team_id = m.team_winner_id THEN 1 ELSE 0 END
         ) AS total_wins,
 
-        -- Đếm trận thua
+        -- Count losses
         SUM(
             CASE WHEN r.team_id = m.team_loser_id THEN 1 ELSE 0 END
         ) AS total_losses
@@ -51,42 +51,38 @@ WITH PlayerWinStats AS (
     JOIN Teams   t  ON r.team_id    = t.team_id
     JOIN Matches m  ON r.team_id    = m.team_winner_id
                     OR r.team_id    = m.team_loser_id
-    -- Chỉ lấy trận trong season player đang đăng ký
+    -- Only include matches in the season the player is registered for
     WHERE m.season_id = r.season_id
     GROUP BY p.player_id, p.nickname, p.role, t.team_name
 ),
 PlayerWinRate AS (
-    -- Bước 2: Tính win rate
+    -- Step 2: Calculate win rate
     SELECT
         *,
-        -- Win rate = wins / total matches, làm tròn 2 chữ số
+        -- Win rate = wins / total matches
         CAST(total_wins AS FLOAT) / NULLIF(total_matches, 0) AS win_rate
     FROM PlayerWinStats
 )
--- Bước 3: Áp dụng DENSE_RANK theo win rate
+-- Step 3: Apply DENSE_RANK by win rate
 SELECT
-    -- DENSE_RANK: ties cùng rank, số tiếp theo KHÔNG bị bỏ
-    -- Ví dụ: 1, 1, 2, 3 (không phải 1, 1, 3, 4)
-    DENSE_RANK() OVER (ORDER BY win_rate DESC) AS [Hạng],
+    -- DENSE_RANK: ties receive same rank; subsequent ranks are not skipped
+    -- Example: 1, 1, 2, 3 (not 1, 1, 3, 4)
+    DENSE_RANK() OVER (ORDER BY win_rate DESC) AS [Rank],
 
     nickname        AS [Nickname],
     team_name       AS [Team],
     role            AS [Role],
-    total_matches   AS [Tổng trận],
-    total_wins      AS [Thắng],
-    total_losses    AS [Thua],
+    total_matches   AS [Total Matches],
+    total_wins      AS [Wins],
+    total_losses    AS [Losses],
     ROUND(win_rate * 100, 1) AS [Win Rate %]
 
 FROM PlayerWinRate
 ORDER BY win_rate DESC, nickname;
 
--- ============================================================
--- QUERY 2: LEADERBOARD THEO TỪNG SEASON
--- Dùng PARTITION BY season_id → rank reset về 1 mỗi season
--- ============================================================
 PRINT N'';
 PRINT N'============================================================';
-PRINT N'QUERY 2: Player Leaderboard Theo Season (PARTITION BY)';
+PRINT N'QUERY 2: Player Leaderboard By Season (PARTITION BY)';
 PRINT N'============================================================';
 
 WITH SeasonStats AS (
@@ -108,17 +104,17 @@ WITH SeasonStats AS (
     GROUP BY p.nickname, t.team_name, s.season_name, s.season_id
 )
 SELECT
-    -- PARTITION BY season_name: rank reset về 1 cho mỗi season
+    -- PARTITION BY season_name: rank resets to 1 per season
     DENSE_RANK() OVER (
-        PARTITION BY season_name    -- nhóm theo season
-        ORDER BY win_rate DESC      -- sắp xếp trong từng nhóm
-    ) AS [Hạng trong Season],
+        PARTITION BY season_name
+        ORDER BY win_rate DESC
+    ) AS [Rank in Season],
 
     season_name         AS [Season],
     nickname            AS [Player],
     team_name           AS [Team],
-    total_matches       AS [Trận],
-    wins                AS [Thắng],
+    total_matches       AS [Matches],
+    wins                AS [Wins],
     ROUND(win_rate * 100, 1) AS [Win Rate %]
 
 FROM SeasonStats
@@ -126,7 +122,7 @@ ORDER BY season_name, win_rate DESC;
 
 -- ============================================================
 -- QUERY 3: TEAM LEADERBOARD
--- Xếp hạng team theo tổng trận thắng
+-- Rank teams by total wins
 -- ============================================================
 PRINT N'';
 PRINT N'============================================================';
@@ -145,34 +141,34 @@ WITH TeamStats AS (
     GROUP BY t.team_id, t.team_name
 )
 SELECT
-    DENSE_RANK() OVER (ORDER BY total_wins DESC) AS [Hạng],
+    DENSE_RANK() OVER (ORDER BY total_wins DESC) AS [Rank],
     team_name       AS [Team],
-    total_wins      AS [Thắng],
-    total_losses    AS [Thua],
-    total_matches   AS [Tổng trận],
+    total_wins      AS [Wins],
+    total_losses    AS [Losses],
+    total_matches   AS [Total Matches],
     ROUND(CAST(total_wins AS FLOAT) / NULLIF(total_matches, 0) * 100, 1) AS [Win Rate %]
 FROM TeamStats
 ORDER BY total_wins DESC;
 
 -- ============================================================
--- QUERY 4: DEMO SO SÁNH DENSE_RANK vs RANK vs ROW_NUMBER
--- ĐÂY LÀ PHẦN QUAN TRỌNG NHẤT ĐỂ DEFEND ORAL
+-- QUERY 4: DEMO COMPARISON DENSE_RANK vs RANK vs ROW_NUMBER
+-- This section demonstrates differences (useful for oral defense)
 --
--- Tạo scenario có 2 player cùng win rate để thấy rõ sự khác nhau
+-- Create a scenario with players sharing win rates to illustrate differences
 -- ============================================================
 PRINT N'';
 PRINT N'============================================================';
-PRINT N'QUERY 4: So sánh DENSE_RANK vs RANK vs ROW_NUMBER';
-PRINT N'(Chuẩn bị cho câu hỏi oral defense)';
+PRINT N'QUERY 4: Compare DENSE_RANK vs RANK vs ROW_NUMBER';
+PRINT N'(Prepared for oral defense)';
 PRINT N'============================================================';
 
 WITH SampleData AS (
-    -- Tạo data mẫu có ties (cùng win rate) để demo
+    -- Create sample data with ties (same win rate) for demo
     SELECT 'Naul'       AS nickname, 'SP' AS team, 0.80 AS win_rate UNION ALL
     SELECT 'Doinb',                  'TF',          0.75             UNION ALL
-    SELECT 'Artifact',               'VG',          0.75             UNION ALL  -- tie với Doinb
+    SELECT 'Artifact',               'VG',          0.75             UNION ALL  -- tie with Doinb
     SELECT 'Palette',                'SP',          0.60             UNION ALL
-    SELECT 'Lai Bâng',               'TF',          0.60             UNION ALL  -- tie với Palette
+    SELECT 'Lai Bâng',               'TF',          0.60             UNION ALL  -- tie with Palette
     SELECT 'KS',                     'VG',          0.50
 )
 SELECT
@@ -180,28 +176,28 @@ SELECT
     team        AS [Team],
     win_rate    AS [Win Rate],
 
-    -- DENSE_RANK: ties cùng rank, số tiếp KHÔNG bỏ
-    -- Kết quả: 1, 2, 2, 3, 3, 4
+    -- DENSE_RANK: ties receive same rank; subsequent ranks are not skipped
+    -- Example result: 1, 2, 2, 3, 3, 4
     DENSE_RANK()  OVER (ORDER BY win_rate DESC) AS [DENSE_RANK],
 
-    -- RANK: ties cùng rank, số tiếp BỊ BỎ
-    -- Kết quả: 1, 2, 2, 4, 4, 6
+    -- RANK: ties receive same rank; subsequent ranks are skipped
+    -- Example result: 1, 2, 2, 4, 4, 6
     RANK()        OVER (ORDER BY win_rate DESC) AS [RANK],
 
-    -- ROW_NUMBER: không có ties, mỗi dòng số KHÁC NHAU
-    -- Kết quả: 1, 2, 3, 4, 5, 6 (thứ tự tie phụ thuộc vào DB)
+    -- ROW_NUMBER: no ties; each row gets a unique number
+    -- Example result: 1, 2, 3, 4, 5, 6 (tie order depends on DB)
     ROW_NUMBER()  OVER (ORDER BY win_rate DESC) AS [ROW_NUMBER]
 
 FROM SampleData
 ORDER BY win_rate DESC;
 
 PRINT N'';
-PRINT N'Giải thích kết quả:';
-PRINT N'- DENSE_RANK: Doinb và Artifact cùng hạng 2, Palette là hạng 3';
-PRINT N'- RANK:       Doinb và Artifact cùng hạng 2, Palette là hạng 4 (bỏ số 3)';
-PRINT N'- ROW_NUMBER: Không có ties, mỗi người một số riêng';
+PRINT N'Explanation of results:';
+PRINT N'- DENSE_RANK: Doinb and Artifact share rank 2, Palette is rank 3';
+PRINT N'- RANK:       Doinb and Artifact share rank 2, Palette is rank 4 (skips rank 3)';
+PRINT N'- ROW_NUMBER: No ties; each player gets a unique number';
 PRINT N'';
-PRINT N'→ Dùng DENSE_RANK cho leaderboard Esports vì:';
-PRINT N'  2 player cùng stats phải được cùng hạng, hạng tiếp theo';
-PRINT N'  không nên bị bỏ số (fan nhìn vào sẽ thấy tự nhiên hơn)';
+PRINT N'→ Use DENSE_RANK for Esports leaderboards because:';
+PRINT N'  Players with identical stats should share the same rank, and the next rank';
+PRINT N'  should not be skipped (fans view is more natural)';
 GO

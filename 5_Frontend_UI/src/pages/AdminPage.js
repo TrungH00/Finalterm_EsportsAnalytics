@@ -1,6 +1,6 @@
 // ============================================================
 // FILE: pages/AdminPage.js — Screen 3: Roster Management
-// MÔ TẢ: Đăng ký player + xem danh sách roster
+// Manage player roster registration and view roster list
 //        Gọi sp_register_player qua API
 // ============================================================
 
@@ -36,15 +36,15 @@ export default function AdminPage() {
     <div className="page-wrapper">
       <h1 className="page-title">Roster <span>Management</span></h1>
 
-      {/* Form đăng ký — gọi sp_register_player */}
+      {/* Registration form — calls sp_register_player */}
       <RosterForm onSuccess={fetchRosters} />
 
-      {/* Danh sách roster */}
+      {/* Roster list */}
       <div className="card">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-          <h3>Roster List ({rosters.length} register)</h3>
+          <h3>Roster List ({rosters.length} registered)</h3>
           <input
-            placeholder="Find player or team..."
+            placeholder="Search player or team..."
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
             style={{ width: "220px" }}
@@ -52,7 +52,7 @@ export default function AdminPage() {
         </div>
 
         {loading ? (
-          <div className="loading">loading...</div>
+          <div className="loading">Loading...</div>
         ) : (
           <div className="table-wrapper">
             <table>
@@ -60,11 +60,11 @@ export default function AdminPage() {
                 <tr>
                   <th>ID</th>
                   <th>Player</th>
-                  <th>Role</th>
+                  <th>Position</th>
                   <th>Team</th>
                   <th>Season</th>
-                  <th>Jersey Number</th>
-                  <th>Starter</th>
+                  <th>Jersey #</th>
+                  <th>Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -84,7 +84,7 @@ export default function AdminPage() {
                   </tr>
                 ))}
                 {filtered.length === 0 && (
-                  <tr><td colSpan={7} style={{ textAlign: "center", color: "#8892a4" }}>No results found</td></tr>
+                  <tr><td colSpan={7} style={{ textAlign: "center", color: "#8892a4" }}>No players found</td></tr>
                 )}
               </tbody>
             </table>

@@ -7,6 +7,9 @@
 -- THỨ TỰ CHẠY: Phải chạy SAU 01_schema.sql và 02_seed_data.sql
 -- ============================================================
 
+USE esports_db;
+GO
+
 IF OBJECT_ID('dbo.sp_get_team_stats', 'P') IS NOT NULL
     DROP PROCEDURE dbo.sp_get_team_stats;
 GO

@@ -1,13 +1,13 @@
 // ============================================================
 // FILE: controllers/rankController.js
-// MÔ TẢ: Gọi SQL DENSE_RANK query và sp_get_team_stats
-//        Đây là phần của Member A
+// Description: Call SQL DENSE_RANK query and sp_get_team_stats
+//        This is part of Member A
 //
 // ENDPOINTS:
 //   GET /api/rank/leaderboard           → player leaderboard
-//   GET /api/rank/leaderboard?season=1  → lọc theo season
+//   GET /api/rank/leaderboard?season=1  → filter by season
 //   GET /api/rank/teams                 → team stats
-//   GET /api/rank/teams?team=1&season=1 → lọc cụ thể
+//   GET /api/rank/teams?team=1&season=1 → filter specific
 // ============================================================
 
 const { getPool, sql } = require("../config/db_sql");

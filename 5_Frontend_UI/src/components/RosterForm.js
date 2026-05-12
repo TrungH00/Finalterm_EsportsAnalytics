@@ -1,7 +1,7 @@
 // ============================================================
 // FILE: components/RosterForm.js
-// MÔ TẢ: Form đăng ký player vào roster
-//        Dùng trong AdminPage
+// Description: Form to register player into roster
+//        Used in AdminPage
 // ============================================================
 
 import { useState } from "react";
@@ -18,7 +18,7 @@ export default function RosterForm({ onSuccess }) {
 
   const handleSubmit = async () => {
     if (!form.player_id || !form.team_id || !form.season_id) {
-      setMessage({ type: "error", text: "Please fill in all the information: Player ID, Team ID and Season ID." });
+      setMessage({ type: "error", text: "Please fill in all required fields: Player ID, Team ID, and Season ID." });
       return;
     }
 
