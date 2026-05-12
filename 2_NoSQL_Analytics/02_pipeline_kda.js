@@ -6,25 +6,25 @@ const COLLECTION = "MatchStats";
 
 // ============================================================
 // FILE: 02_pipeline_kda.js
-// MÔ TẢ: Tính KDA trung bình từng player qua tất cả các trận
+// DESC: Calculate average KDA per player across all matches
 //
 // KDA = (kills + assists) / max(deaths, 1)
-//       max(deaths, 1) để tránh chia cho 0 — edge case M022
+//       max(deaths, 1) to avoid division by zero — edge case M022
 //
 // STAGES:
 //   1. $unwind teams       → flatten teams[] (1 doc → 2 docs)
 //   2. $unwind players     → flatten players[] (1 doc → 5 docs)
-//   3. $match              → loại bỏ edge case players rỗng
-//   4. $group player_id    → gom theo player, tính avg stats
-//   5. $addFields kda      → tính KDA score
-//   6. $sort kda_score     → player giỏi nhất lên đầu
-//   7. $project            → format output gọn
+//   3. $match              → filter out empty players edge cases
+//   4. $group player_id    → group by player, compute avg stats
+//   5. $addFields kda      → compute KDA score
+//   6. $sort kda_score     → best player first
+//   7. $project            → format output
 // ============================================================
 
 const pipeline = [
   // STAGE 1: Flatten teams[]
-  // Trước: { match_id: "M001", teams: [teamA, teamB] }
-  // Sau:   2 documents — mỗi document chứa 1 team
+  // Before: { match_id: "M001", teams: [teamA, teamB] }
+  // After:  2 documents — each document contains 1 team
   {
     $unwind: {
       path: "$teams",
@@ -32,10 +32,10 @@ const pipeline = [
     },
   },
 
-  // STAGE 2: Flatten players[] bên trong team
-  // Trước: { teams: { players: [p1, p2, p3, p4, p5] } }
-  // Sau:   5 documents — mỗi document chứa 1 player
-  // preserveNullAndEmptyArrays: true → GIỮ document dù players[] rỗng
+  // STAGE 2: Flatten players[] inside each team
+  // Before: { teams: { players: [p1, p2, p3, p4, p5] } }
+  // After:  5 documents — each document contains 1 player
+  // preserveNullAndEmptyArrays: true → KEEP document even if players[] is empty
   {
     $unwind: {
       path: "$teams.players",
@@ -43,7 +43,7 @@ const pipeline = [
     },
   },
 
-  // STAGE 3: Lọc bỏ document không có player data (edge case M021)
+  // STAGE 3: Filter out documents with no player data (edge case M021)
   {
     $match: {
       "teams.players": { $ne: null },
@@ -51,7 +51,7 @@ const pipeline = [
     },
   },
 
-  // STAGE 4: Gom theo player_id, tính trung bình
+  // STAGE 4: Group by player_id, compute averages
   {
     $group: {
       _id:           "$teams.players.player_id",
@@ -69,7 +69,7 @@ const pipeline = [
     },
   },
 
-  // STAGE 5: Tính KDA score
+  // STAGE 5: Compute KDA score
   // KDA = (avg_kills + avg_assists) / max(avg_deaths, 1)
   {
     $addFields: {
@@ -90,10 +90,10 @@ const pipeline = [
     },
   },
 
-  // STAGE 6: Sắp xếp KDA giảm dần
+  // STAGE 6: Sort KDA descending
   { $sort: { kda_score: -1 } },
 
-  // STAGE 7: Chỉ giữ field cần thiết
+  // STAGE 7: Keep only required fields
   {
     $project: {
       _id:           0,
@@ -113,9 +113,9 @@ const pipeline = [
 ];
 
 // ============================================================
-// PIPELINE LỌC THEO TOURNAMENT
-// $match đặt TRƯỚC $unwind → chỉ xử lý document thỏa điều kiện
-// → performance tốt hơn nhiều khi collection lớn
+// PIPELINE FILTER BY TOURNAMENT
+// $match placed BEFORE $unwind → only processes matching documents
+// → much better performance on large collections
 // ============================================================
 function getPipelineByTournament(tournamentName) {
   return [
@@ -132,33 +132,33 @@ async function runKDAPipeline() {
     const db         = client.db(DB_NAME);
     const collection = db.collection(COLLECTION);
 
-    // ── VERIFY số documents qua từng stage ──────────────────
+    // ── VERIFY document count through each stage ────────────────────
     console.log("=".repeat(60));
-    console.log("VERIFY: Documents qua từng $unwind stage");
+    console.log("VERIFY: Documents through each $unwind stage");
     console.log("=".repeat(60));
 
     const total = await collection.countDocuments();
-    console.log(`Trước pipeline:       ${total} documents`);
+    console.log(`Before pipeline:      ${total} documents`);
 
     const afterTeams = await collection.aggregate([
       { $unwind: { path: "$teams", preserveNullAndEmptyArrays: false } },
     ]).toArray();
-    console.log(`Sau $unwind teams:    ${afterTeams.length} documents  (${total} × 2 team)`);
+    console.log(`After $unwind teams:  ${afterTeams.length} documents  (${total} × 2 teams)`);
 
     const afterPlayers = await collection.aggregate([
       { $unwind: { path: "$teams",         preserveNullAndEmptyArrays: false } },
       { $unwind: { path: "$teams.players", preserveNullAndEmptyArrays: true  } },
     ]).toArray();
-    console.log(`Sau $unwind players:  ${afterPlayers.length} documents  (× 5 player/team)`);
+    console.log(`After $unwind players:${afterPlayers.length} documents  (× 5 players/team)`);
 
-    // ── CHẠY PIPELINE CHÍNH ─────────────────────────────────
+    // ── RUN MAIN PIPELINE ──────────────────────────────────────────
     console.log("");
     console.log("=".repeat(60));
-    console.log("KDA Leaderboard — Tất cả tournament");
+    console.log("KDA Leaderboard — All tournaments");
     console.log("=".repeat(60));
 
     const results = await collection.aggregate(pipeline).toArray();
-    console.log(`\nTổng player: ${results.length}\n`);
+    console.log(`\nTotal players: ${results.length}\n`);
     console.log("Rank | Player          | Team              | Role    | Matches | K     | D     | A     | KDA");
     console.log("─".repeat(100));
 
@@ -168,10 +168,10 @@ async function runKDAPipeline() {
       );
     });
 
-    // ── FILTER THEO TOURNAMENT ──────────────────────────────
+    // ── FILTER BY TOURNAMENT ───────────────────────────────────────
     console.log("");
     console.log("=".repeat(60));
-    console.log("KDA Leaderboard — Chỉ VPS Spring 2025");
+    console.log("KDA Leaderboard — VPS Spring 2025 only");
     console.log("=".repeat(60));
 
     const vpsOnly = await collection
@@ -183,7 +183,7 @@ async function runKDAPipeline() {
     });
 
   } catch (err) {
-    console.error("✗ Lỗi:", err);
+    console.error("✗ Error:", err);
   } finally {
     await client.close();
   }

@@ -1,7 +1,7 @@
 // ============================================================
 // FILE: pages/FanPage.js — Screen 1: Global Leaderboard
-// MÔ TẢ: Hiển thị bảng xếp hạng player từ SQL DENSE_RANK
-//        Filter theo season
+// DESC: Display player leaderboard from SQL DENSE_RANK
+//       Filter by season
 // ============================================================
 import { useState, useEffect } from "react";
 import { getLeaderboard } from "../api/apiClient";
@@ -39,7 +39,7 @@ export default function FanPage() {
 
       <div className="filter-bar">
         <div className="form-group">
-          <label>Filter theo Season</label>
+          <label>Filter by Season</label>
           <select value={season} onChange={(e) => setSeason(e.target.value)}>
             <option value="">All season</option>
             <option value="1">LCK Spring 2025</option>

@@ -1,7 +1,7 @@
 // ============================================================
 // FILE: components/RosterForm.js
-// MÔ TẢ: Form đăng ký player vào roster
-//        Dùng trong AdminPage
+// DESC: Form to register player into roster
+//       Used in AdminPage
 // ============================================================
 
 import { useState } from "react";

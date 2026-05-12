@@ -1,17 +1,17 @@
 -- ============================================================
 -- FILE: 01_schema.sql
--- MÔ TẢ: Tạo toàn bộ cấu trúc bảng cho Esports Analytics
---        Game: League of Legends
---        Engine: MS SQL Server (T-SQL)
+-- DESC: Create all table schemas for Esports Analytics
+--       Game: League of Legends
+--       Engine: MS SQL Server (T-SQL)
 --
--- THỨ TỰ CHẠY: File này phải chạy TRƯỚC tất cả file khác
+-- RUN ORDER: This file must run BEFORE all other files
 --
--- CÁC BẢNG:
---   1. Seasons    — Mùa giải (LCK Spring 2025, Worlds 2024)
---   2. Teams      — Đội thi đấu (T1, Cloud9, Fnatic, G2)
---   3. Players    — Game thủ (Faker, Caps, Rekkles...)
---   4. Rosters    — Đăng ký thi đấu
---   5. Matches    — Kết quả trận đấu
+-- TABLES:
+--   1. Seasons    — Seasons (LCK Spring 2025, Worlds 2024)
+--   2. Teams      — Competing teams (T1, Cloud9, Fnatic, G2)
+--   3. Players    — Players (Faker, Caps, Rekkles...)
+--   4. Rosters    — Player registrations
+--   5. Matches    — Match results
 -- ============================================================
 USE esports_db;
 GO
@@ -85,9 +85,9 @@ CREATE INDEX IX_Match_Winner ON Matches(team_winner_id);
 CREATE INDEX IX_Match_Loser  ON Matches(team_loser_id);
 CREATE INDEX IX_Match_Season ON Matches(season_id);
 
-SELECT TABLE_NAME AS [Tên bảng], TABLE_TYPE AS [Loại]
+SELECT TABLE_NAME AS [Table Name], TABLE_TYPE AS [Type]
 FROM INFORMATION_SCHEMA.TABLES
 WHERE TABLE_SCHEMA = 'dbo'
 ORDER BY TABLE_NAME;
 
-PRINT 'Schema tạo thành công!';
+PRINT 'Schema created successfully!';

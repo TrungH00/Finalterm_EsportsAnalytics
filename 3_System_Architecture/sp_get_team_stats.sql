@@ -1,10 +1,10 @@
 -- ============================================================
 -- FILE: sp_get_team_stats.sql
--- MÔ TẢ: Stored Procedure tổng hợp thống kê team
---        Trả về win/loss/win rate theo season
---        Engine: MS SQL Server (T-SQL)
+-- DESC: Stored Procedure to aggregate team statistics
+--       Returns win/loss/win rate by season
+--       Engine: MS SQL Server (T-SQL)
 --
--- THỨ TỰ CHẠY: Phải chạy SAU 01_schema.sql và 02_seed_data.sql
+-- RUN ORDER: Must run AFTER 01_schema.sql and 02_seed_data.sql
 -- ============================================================
 
 IF OBJECT_ID('dbo.sp_get_team_stats', 'P') IS NOT NULL
@@ -12,9 +12,9 @@ IF OBJECT_ID('dbo.sp_get_team_stats', 'P') IS NOT NULL
 GO
 
 CREATE PROCEDURE dbo.sp_get_team_stats
-    -- Lọc theo team cụ thể (NULL = lấy tất cả team)
+    -- Filter by specific team (NULL = all teams)
     @team_id    INT  = NULL,
-    -- Lọc theo season cụ thể (NULL = lấy tất cả season)
+    -- Filter by specific season (NULL = all seasons)
     @season_id  INT  = NULL
 AS
 BEGIN
@@ -24,16 +24,16 @@ BEGIN
         t.team_name                             AS [Team],
         s.season_name                           AS [Season],
 
-        -- Tổng trận thắng
+        -- Total wins
         COUNT(CASE WHEN m.team_winner_id = t.team_id THEN 1 END)
-                                                AS [Thắng],
+                                                AS [Wins],
 
-        -- Tổng trận thua
+        -- Total losses
         COUNT(CASE WHEN m.team_loser_id = t.team_id THEN 1 END)
-                                                AS [Thua],
+                                                AS [Losses],
 
-        -- Tổng trận
-        COUNT(m.match_id)                       AS [Tổng trận],
+        -- Total matches
+        COUNT(m.match_id)                       AS [Total Matches],
 
         -- Win rate %
         ROUND(
@@ -41,22 +41,22 @@ BEGIN
             / NULLIF(COUNT(m.match_id), 0) * 100
         , 1)                                    AS [Win Rate %],
 
-        -- Thời gian thi đấu trung bình
+        -- Average match duration
         AVG(m.duration_minutes)                 AS [Avg Duration (min)],
 
-        -- Xếp hạng trong season dùng DENSE_RANK
+        -- Rank within season using DENSE_RANK
         DENSE_RANK() OVER (
             PARTITION BY s.season_id
             ORDER BY
                 COUNT(CASE WHEN m.team_winner_id = t.team_id THEN 1 END) DESC
-        )                                       AS [Hạng trong Season]
+        )                                       AS [Rank in Season]
 
     FROM Teams   t
     JOIN Matches m  ON t.team_id   = m.team_winner_id
                     OR t.team_id   = m.team_loser_id
     JOIN Seasons s  ON m.season_id = s.season_id
 
-    -- Filter động: nếu truyền @team_id thì lọc, không thì lấy hết
+    -- Dynamic filter: if @team_id is passed, filter; otherwise return all
     WHERE (@team_id   IS NULL OR t.team_id   = @team_id)
       AND (@season_id IS NULL OR s.season_id = @season_id)
 
@@ -68,7 +68,7 @@ BEGIN
 
     ORDER BY
         s.season_name,
-        [Thắng] DESC;
+        [Wins] DESC;
 END;
 GO
 
@@ -77,25 +77,25 @@ GO
 -- ============================================================
 
 PRINT N'============================================================';
-PRINT N'TEST 1: Tất cả team, tất cả season';
+PRINT N'TEST 1: All teams, all seasons';
 PRINT N'============================================================';
 EXEC dbo.sp_get_team_stats;
 
 PRINT N'';
 PRINT N'============================================================';
-PRINT N'TEST 2: Chỉ Saigon Phantom (team_id=1)';
+PRINT N'TEST 2: T1 only (team_id=1)';
 PRINT N'============================================================';
 EXEC dbo.sp_get_team_stats @team_id = 1;
 
 PRINT N'';
 PRINT N'============================================================';
-PRINT N'TEST 3: Chỉ VPS Spring 2025 (season_id=1)';
+PRINT N'TEST 3: LCK Spring 2025 only (season_id=1)';
 PRINT N'============================================================';
 EXEC dbo.sp_get_team_stats @season_id = 1;
 
 PRINT N'';
 PRINT N'============================================================';
-PRINT N'TEST 4: Team Flash trong AIC 2024';
+PRINT N'TEST 4: Cloud9 in Worlds 2024';
 PRINT N'============================================================';
 EXEC dbo.sp_get_team_stats @team_id = 2, @season_id = 2;
 GO

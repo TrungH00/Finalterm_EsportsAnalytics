@@ -1,6 +1,6 @@
 // ============================================================
 // FILE: src/App.js
-// MÔ TẢ: Main React component — routing giữa 3 trang
+// DESC: Main React component — routing between 3 pages
 // ============================================================
 
 import { BrowserRouter, Routes, Route } from "react-router-dom";

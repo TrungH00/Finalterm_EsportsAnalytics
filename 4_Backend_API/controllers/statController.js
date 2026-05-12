@@ -1,23 +1,23 @@
 // ============================================================
 // FILE: controllers/statController.js
-// MÔ TẢ: Gọi MongoDB Aggregation Pipeline
-//        Đây là phần của Member B — ownership của bạn
+// DESC: Call MongoDB Aggregation Pipeline
+//       This belongs to Member B
 //
 // ENDPOINTS:
-//   GET /api/stats/kda           → KDA tất cả player
-//   GET /api/stats/kda/:playerId → KDA 1 player cụ thể
-//   GET /api/stats/team-avg      → Hiệu suất team
+//   GET /api/stats/kda           → KDA for all players
+//   GET /api/stats/kda/:playerId → KDA for one specific player
+//   GET /api/stats/team-avg      → Team performance
 //   GET /api/stats/team-avg?tournament=VPS Spring 2025
 // ============================================================
 
 const mongoose = require("mongoose");
 
-// Lấy collection trực tiếp từ mongoose connection
+// Get collection directly from mongoose connection
 function getCollection() {
   return mongoose.connection.db.collection("MatchStats");
 }
 
-// ── KDA PIPELINE (từ 02_pipeline_kda.js) ────────────────────
+// ── KDA PIPELINE (from 02_pipeline_kda.js) ────────────────────
 const kdaPipeline = [
   { $unwind: { path: "$teams", preserveNullAndEmptyArrays: false } },
   { $unwind: { path: "$teams.players", preserveNullAndEmptyArrays: true } },
@@ -48,7 +48,7 @@ const kdaPipeline = [
   { $project: { _id: 0, player_id: "$_id", name: 1, role: 1, team_name: 1, total_matches: 1, avg_kills: 1, avg_deaths: 1, avg_assists: 1, avg_gold: 1, kda_score: 1 } },
 ];
 
-// ── TEAM AVG PIPELINE (từ 03_pipeline_team_avg.js) ───────────
+// ── TEAM AVG PIPELINE (from 03_pipeline_team_avg.js) ───────────
 const teamAvgPipeline = [
   { $unwind: { path: "$teams", preserveNullAndEmptyArrays: false } },
   { $unwind: { path: "$teams.players", preserveNullAndEmptyArrays: true } },
@@ -70,7 +70,7 @@ const teamAvgPipeline = [
       win_rate: {
         $round: [
           { $divide: [
-            { $divide: ["$wins", 5] },                        // wins thật = wins/5
+            { $divide: ["$wins", 5] },                        // actual wins = wins/5
             { $divide: ["$total_player_entries", 5] },        // total_matches
           ]},
           2,
@@ -95,7 +95,7 @@ const teamAvgPipeline = [
 // ── CONTROLLER FUNCTIONS ────────────────────────────────────
 
 // GET /api/stats/kda
-// Trả về KDA tất cả player, sắp xếp theo kda_score giảm dần
+// Return KDA for all players, sorted by kda_score descending
 const getKDA = async (req, res) => {
   try {
     const collection = getCollection();
@@ -112,24 +112,24 @@ const getKDA = async (req, res) => {
 };
 
 // GET /api/stats/kda/:playerId
-// Trả về KDA của 1 player cụ thể
+// Return KDA for a specific player
 const getKDAByPlayer = async (req, res) => {
   try {
     const { playerId } = req.params;
     const collection   = getCollection();
 
-    // Thêm $match lọc theo player_id vào đầu pipeline
+    // Add $match filter by player_id at the start of the pipeline
     const filteredPipeline = [
       { $unwind: { path: "$teams", preserveNullAndEmptyArrays: false } },
       { $unwind: { path: "$teams.players", preserveNullAndEmptyArrays: true } },
       { $match: { "teams.players.player_id": playerId } },
-      ...kdaPipeline.slice(3), // bỏ 3 stage đầu, dùng từ $group trở đi
+      ...kdaPipeline.slice(3), // skip first 3 stages, use from $group onward
     ];
 
     const results = await collection.aggregate(filteredPipeline).toArray();
 
     if (results.length === 0) {
-      return res.status(404).json({ success: false, message: `Không tìm thấy player: ${playerId}` });
+      return res.status(404).json({ success: false, message: `Player not found: ${playerId}` });
     }
 
     res.json({ success: true, data: results[0] });
@@ -140,13 +140,13 @@ const getKDAByPlayer = async (req, res) => {
 
 // GET /api/stats/team-avg
 // GET /api/stats/team-avg?tournament=VPS Spring 2025
-// Trả về hiệu suất team, có thể filter theo tournament
+// Return team performance, filterable by tournament
 const getTeamAvg = async (req, res) => {
   try {
     const { tournament } = req.query;
     const collection     = getCollection();
 
-    // Nếu có query param tournament → thêm $match vào đầu pipeline
+    // If tournament query param present → prepend $match to pipeline
     const pipeline = tournament
       ? [{ $match: { tournament } }, ...teamAvgPipeline]
       : teamAvgPipeline;
@@ -165,7 +165,7 @@ const getTeamAvg = async (req, res) => {
 };
 
 // GET /api/stats/champions
-// Trả về thống kê từng tướng (champion) qua tất cả trận
+// Return stats for each champion across all matches
 const getChampions = async (req, res) => {
   try {
     const collection = getCollection();

@@ -1,7 +1,7 @@
 // ============================================================
 // FILE: config/db_sql.js
-// MÔ TẢ: Kết nối MS SQL Server dùng thư viện mssql
-//        Dùng connection pool để tái sử dụng kết nối
+// DESC: Connect to MS SQL Server using mssql library
+//       Use connection pool for reuse
 // ============================================================
 
 const sql = require("mssql");
@@ -13,34 +13,34 @@ const config = {
   password: process.env.SQL_PASSWORD || "123456789",
   port:    1433,
   options: {
-    encrypt:                false,  // true nếu dùng Azure
-    trustServerCertificate: true,   // cho phép cert tự ký ở local
+    encrypt:                false,  // true if using Azure
+    trustServerCertificate: true,   // allow self-signed cert locally
     instanceName:           "SQLEXPRESS",
   },
   pool: {
-    max: 10,  // tối đa 10 kết nối đồng thời
+    max: 10,  // max 10 concurrent connections
     min: 0,
     idleTimeoutMillis: 30000,
   },
 };
 
-// Pool dùng chung toàn app — không tạo mới mỗi request
+// Shared pool across the app — not recreated per request
 let pool = null;
 
 async function connectSQL() {
   try {
     pool = await sql.connect(config);
-    console.log("✓ Kết nối MS SQL Server thành công");
+    console.log("✓ Connected to MS SQL Server");
     return pool;
   } catch (err) {
-    console.error("✗ Lỗi kết nối SQL Server:", err);
+    console.error("✗ SQL Server connection error:", err);
     throw err;
   }
 }
 
-// Hàm lấy pool để dùng trong controller
+// Get pool for use in controllers
 function getPool() {
-  if (!pool) throw new Error("SQL chưa được kết nối. Gọi connectSQL() trước.");
+  if (!pool) throw new Error("SQL not connected. Call connectSQL() first.");
   return pool;
 }
 

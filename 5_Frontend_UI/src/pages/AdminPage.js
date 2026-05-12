@@ -1,7 +1,7 @@
 // ============================================================
 // FILE: pages/AdminPage.js — Screen 3: Roster Management
-// MÔ TẢ: Đăng ký player + xem danh sách roster
-//        Gọi sp_register_player qua API
+// DESC: Register player + view roster list
+//       Calls sp_register_player via API
 // ============================================================
 
 import { useState, useEffect } from "react";
@@ -36,10 +36,10 @@ export default function AdminPage() {
     <div className="page-wrapper">
       <h1 className="page-title">Roster <span>Management</span></h1>
 
-      {/* Form đăng ký — gọi sp_register_player */}
+      {/* Registration form — calls sp_register_player */}
       <RosterForm onSuccess={fetchRosters} />
 
-      {/* Danh sách roster */}
+      {/* Roster list */}
       <div className="card">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
           <h3>Roster List ({rosters.length} register)</h3>

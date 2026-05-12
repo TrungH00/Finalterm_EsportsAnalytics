@@ -1,10 +1,10 @@
 // ============================================================
 // FILE: controllers/rosterController.js
-// MÔ TẢ: Gọi sp_register_player Stored Procedure của Member C
+// DESC: Call sp_register_player Stored Procedure from Member C
 //
 // ENDPOINTS:
-//   POST /api/rosters/register  → đăng ký player vào roster
-//   GET  /api/rosters           → lấy danh sách roster
+//   POST /api/rosters/register  → register player into roster
+//   GET  /api/rosters           → get roster list
 // ============================================================
 
 const { getPool, sql } = require("../config/db_sql");
@@ -19,7 +19,7 @@ const registerPlayer = async (req, res) => {
     if (!player_id || !team_id || !season_id) {
       return res.status(400).json({
         success: false,
-        message: "Thiếu thông tin: player_id, team_id, season_id là bắt buộc.",
+        message: "Missing required fields: player_id, team_id, season_id.",
       });
     }
 
@@ -33,7 +33,7 @@ const registerPlayer = async (req, res) => {
     request.input("jersey_number", sql.Int, jersey_number || null);
     request.input("is_starter",    sql.Bit, is_starter !== undefined ? is_starter : 1);
 
-    // Output parameters — nhận kết quả từ SP
+    // Output parameters — receive results from SP
     request.output("success",   sql.Bit);
     request.output("message",   sql.NVarChar(500));
     request.output("roster_id", sql.Int);
@@ -55,7 +55,7 @@ const registerPlayer = async (req, res) => {
 };
 
 // GET /api/rosters
-// Lấy danh sách roster hiện tại
+// Get current roster list
 const getRosters = async (req, res) => {
   try {
     const pool    = getPool();

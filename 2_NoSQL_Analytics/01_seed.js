@@ -8,7 +8,7 @@ const COLLECTION = "MatchStats";
 // MOCK DATA — League of Legends
 // 4 team: T1, Cloud9 (C9), Fnatic (FNC), G2 Esports (G2)
 // 2 tournament: LCK Spring 2025, Worlds 2024
-// 22 documents (20 trận + 2 edge cases)
+// 22 documents (20 matches + 2 edge cases)
 // ============================================================
 
 const teams = {
@@ -121,10 +121,10 @@ function genMatch(matchId, teamAKey, teamBKey, tournament, date, winnerKey) {
 }
 
 // ============================================================
-// 20 TRẬN CHÍNH
+// 20 MAIN MATCHES
 // ============================================================
 const matches = [
-  // LCK Spring 2025 — 12 trận
+  // LCK Spring 2025 — 12 matches
   genMatch("M001", "T1",  "C9",  "LCK Spring 2025", "2025-01-10", "T1"),
   genMatch("M002", "FNC", "G2",  "LCK Spring 2025", "2025-01-11", "G2"),
   genMatch("M003", "T1",  "FNC", "LCK Spring 2025", "2025-01-12", "T1"),
@@ -138,7 +138,7 @@ const matches = [
   genMatch("M011", "T1",  "G2",  "LCK Spring 2025", "2025-02-09", "T1"),
   genMatch("M012", "FNC", "C9",  "LCK Spring 2025", "2025-02-15", "C9"),
 
-  // Worlds 2024 — 8 trận
+  // Worlds 2024 — 8 matches
   genMatch("M013", "T1",  "G2",  "Worlds 2024", "2024-10-15", "T1"),
   genMatch("M014", "C9",  "FNC", "Worlds 2024", "2024-10-16", "FNC"),
   genMatch("M015", "T1",  "FNC", "Worlds 2024", "2024-10-20", "T1"),
@@ -148,11 +148,11 @@ const matches = [
   genMatch("M019", "T1",  "FNC", "Worlds 2024", "2024-11-02", "T1"),
   genMatch("M020", "G2",  "C9",  "Worlds 2024", "2024-11-03", "C9"),
 
-  // EDGE CASE 1: players[] rỗng
+  // EDGE CASE 1: empty players[]
   {
     match_id: "M021", tournament: "LCK Spring 2025", date: "2025-02-20",
     duration_minutes: 0,
-    note: "EDGE CASE — trận bị hủy, players[] rỗng",
+    note: "EDGE CASE — cancelled match, empty players[]",
     teams: [
       { team_id: "T1",  team_name: "T1",     result: "no_contest", players: [] },
       { team_id: "FNC", team_name: "Fnatic", result: "no_contest", players: [] },
@@ -163,7 +163,7 @@ const matches = [
   {
     match_id: "M022", tournament: "Worlds 2024", date: "2024-11-05",
     duration_minutes: 22,
-    note: "EDGE CASE — support có kills=0, deaths=0",
+    note: "EDGE CASE — support with kills=0, deaths=0",
     teams: [
       {
         team_id: "T1", team_name: "T1", result: "win",
@@ -193,24 +193,24 @@ async function seed() {
   const client = new MongoClient(URI);
   try {
     await client.connect();
-    console.log("✓ Đã kết nối MongoDB");
+    console.log("✓ Connected to MongoDB");
 
     const db         = client.db(DB_NAME);
     const collection = db.collection(COLLECTION);
 
     await collection.deleteMany({});
-    console.log("✓ Đã xóa data cũ");
+    console.log("✓ Cleared old data");
 
     const result = await collection.insertMany(matches);
-    console.log(`✓ Insert thành công: ${result.insertedCount} documents`);
+    console.log(`✓ Inserted successfully: ${result.insertedCount} documents`);
 
     const total = await collection.countDocuments();
-    console.log(`✓ Tổng documents: ${total}`);
+    console.log(`✓ Total documents: ${total}`);
     console.log("─".repeat(50));
-    console.log("Chạy tiếp: node 02_pipeline_kda.js");
+    console.log("Run next: node 02_pipeline_kda.js");
 
   } catch (err) {
-    console.error("✗ Lỗi:", err);
+    console.error("✗ Error:", err);
   } finally {
     await client.close();
   }

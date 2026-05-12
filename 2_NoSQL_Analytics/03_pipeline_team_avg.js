@@ -6,15 +6,15 @@ const COLLECTION = "MatchStats";
 
 // ============================================================
 // FILE: 03_pipeline_team_avg.js
-// MÔ TẢ: Tính hiệu suất trung bình từng team theo tournament
+// DESC: Calculate average performance per team by tournament
 //
 // STAGES:
 //   1. $unwind teams         → flatten teams[]
 //   2. $unwind players       → flatten players[]
-//   3. $match                → loại edge case rỗng
-//   4. $group team+tournament→ gom theo team + tournament
-//   5. $addFields            → tính total_matches, win_rate
-//   6. $sort win_rate        → team mạnh nhất lên đầu
+//   3. $match                → filter out empty edge cases
+//   4. $group team+tournament→ group by team + tournament
+//   5. $addFields            → compute total_matches, win_rate
+//   6. $sort win_rate        → strongest team first
 //   7. $project              → format output
 // ============================================================
 
@@ -43,9 +43,9 @@ const pipeline = [
     },
   },
 
-  // STAGE 4: Gom theo team_id + tournament
-  // Tại sao group cả 2 field?
-  // → 1 team thi đấu ở nhiều tournament → cần tách riêng từng tournament
+  // STAGE 4: Group by team_id + tournament
+  // Why group by both fields?
+  // → 1 team plays in multiple tournaments → need separate entries per tournament
   {
     $group: {
       _id: {
@@ -65,8 +65,8 @@ const pipeline = [
     },
   },
 
-  // STAGE 5: Tính total_matches và win_rate
-  // total_player_entries = total_matches × 5 player
+  // STAGE 5: Compute total_matches and win_rate
+  // total_player_entries = total_matches × 5 players
   // → total_matches = total_player_entries / 5
   {
     $addFields: {
@@ -93,7 +93,7 @@ const pipeline = [
     },
   },
 
-  // STAGE 6: Sắp xếp win_rate giảm dần
+  // STAGE 6: Sort win_rate descending
   { $sort: { win_rate: -1, avg_kills: -1 } },
 
   // STAGE 7
@@ -115,7 +115,7 @@ const pipeline = [
   },
 ];
 
-// Filter theo tournament — $match đặt TRƯỚC $unwind
+// Filter by tournament — $match placed BEFORE $unwind
 function getPipelineByTournament(tournamentName) {
   return [
     { $match: { tournament: tournamentName } },
@@ -131,13 +131,13 @@ async function runTeamAvgPipeline() {
     const db         = client.db(DB_NAME);
     const collection = db.collection(COLLECTION);
 
-    // ── TẤT CẢ TOURNAMENT ───────────────────────────────────
+    // ── ALL TOURNAMENTS ──────────────────────────────────────────────
     console.log("=".repeat(70));
-    console.log("Team Stats — Tất cả tournament");
+    console.log("Team Stats — All tournaments");
     console.log("=".repeat(70));
 
     const results = await collection.aggregate(pipeline).toArray();
-    console.log(`\nKết quả: ${results.length} nhóm (team × tournament)\n`);
+    console.log(`\nResults: ${results.length} groups (team × tournament)\n`);
     console.log("Tournament           | Team              | Matches | Wins | Win%  | K/D/A");
     console.log("─".repeat(80));
 
@@ -148,11 +148,11 @@ async function runTeamAvgPipeline() {
       );
     });
 
-    // ── CHỈ VPS SPRING 2025 ─────────────────────────────────
+    // ── VPS SPRING 2025 ONLY ─────────────────────────────────────────
     console.log("");
     console.log("=".repeat(70));
-    console.log("Team Stats — Chỉ VPS Spring 2025");
-    console.log("($match đặt trước $unwind → tối ưu performance)");
+    console.log("Team Stats — VPS Spring 2025 only");
+    console.log("($match placed before $unwind → optimized performance)");
     console.log("=".repeat(70));
 
     const vpsOnly = await collection
@@ -167,7 +167,7 @@ async function runTeamAvgPipeline() {
     });
 
   } catch (err) {
-    console.error("✗ Lỗi:", err);
+    console.error("✗ Error:", err);
   } finally {
     await client.close();
   }

@@ -1,7 +1,7 @@
 // ============================================================
 // FILE: components/PlayerCard.js
-// MÔ TẢ: Card hiển thị KDA stats của 1 player
-//        Dùng trong AnalystPage
+// DESC: Card displaying KDA stats for 1 player
+//       Used in AnalystPage
 // ============================================================
 
 export default function PlayerCard({ player, rank }) {

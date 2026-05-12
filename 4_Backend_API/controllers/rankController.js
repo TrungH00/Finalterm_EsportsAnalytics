@@ -1,13 +1,13 @@
 // ============================================================
 // FILE: controllers/rankController.js
-// MÔ TẢ: Gọi SQL DENSE_RANK query và sp_get_team_stats
-//        Đây là phần của Member A
+// DESC: Call SQL DENSE_RANK query and sp_get_team_stats
+//       This belongs to Member A
 //
 // ENDPOINTS:
 //   GET /api/rank/leaderboard           → player leaderboard
-//   GET /api/rank/leaderboard?season=1  → lọc theo season
-//   GET /api/rank/teams                 → team stats
-//   GET /api/rank/teams?team=1&season=1 → lọc cụ thể
+//   GET /api/rank/leaderboard?season=1  → filter by season
+//   GET /api/rank/teams                 → team ranking
+//   GET /api/rank/teams?team=1&season=1 → filter by team and season
 // ============================================================
 
 const { getPool, sql } = require("../config/db_sql");
@@ -19,7 +19,7 @@ const getLeaderboard = async (req, res) => {
     const pool       = getPool();
     const request    = pool.request();
 
-    // Query DENSE_RANK — lọc theo season nếu có
+    // DENSE_RANK query — filter by season if provided
     let query = `
       WITH PlayerWinStats AS (
         SELECT
@@ -69,7 +69,7 @@ const getTeamRank = async (req, res) => {
     const pool             = getPool();
     const request          = pool.request();
 
-    // Gọi Stored Procedure sp_get_team_stats của Member C
+    // Call Stored Procedure sp_get_team_stats from Member C
     if (team)   request.input("team_id",   sql.Int, parseInt(team));
     if (season) request.input("season_id", sql.Int, parseInt(season));
 

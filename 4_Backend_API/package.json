@@ -1,7 +1,7 @@
 {
   "name": "esports-analytics-api",
   "version": "1.0.0",
-  "description": "Backend API for Esports Analytics — Liên Quân Mobile",
+  "description": "Backend API for Esports Analytics — League of Legends",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

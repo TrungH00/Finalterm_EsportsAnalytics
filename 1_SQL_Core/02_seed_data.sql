@@ -102,10 +102,10 @@ INSERT INTO Matches (match_code,season_id,tournament_name,team_winner_id,team_lo
 ('M020',2,N'Worlds 2024',2,4,'2024-11-03',31,'M020');
 
 -- VERIFY
-SELECT 'Seasons' AS [Bảng], COUNT(*) AS [Số dòng] FROM Seasons
+SELECT 'Seasons' AS [Table], COUNT(*) AS [Rows] FROM Seasons
 UNION ALL SELECT 'Teams',   COUNT(*) FROM Teams
 UNION ALL SELECT 'Players', COUNT(*) FROM Players
 UNION ALL SELECT 'Rosters', COUNT(*) FROM Rosters
 UNION ALL SELECT 'Matches', COUNT(*) FROM Matches;
 
-PRINT N'LOL seed data insert thành công!';
+PRINT N'LOL seed data inserted successfully!';

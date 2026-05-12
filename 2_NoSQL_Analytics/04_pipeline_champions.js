@@ -6,15 +6,15 @@ const COLLECTION = "MatchStats";
 
 // ============================================================
 // FILE: 04_pipeline_champions.js
-// MÔ TẢ: Tính thống kê từng tướng (champion) qua tất cả trận
+// DESC: Calculate stats for each champion across all matches
 //
 // STAGES:
 //   1. $unwind teams       → flatten teams[]
 //   2. $unwind players     → flatten players[]
-//   3. $match              → loại edge case rỗng
-//   4. $group champion     → gom theo tên tướng
-//   5. $addFields          → tính avg stats + pick rate
-//   6. $sort pick_count    → tướng được pick nhiều nhất lên đầu
+//   3. $match              → filter out empty edge cases
+//   4. $group champion     → group by champion name
+//   5. $addFields          → compute avg stats + pick rate
+//   6. $sort pick_count    → most picked champion first
 //   7. $project            → format output
 // ============================================================
 
@@ -34,7 +34,7 @@ const pipeline = [
     },
   },
 
-  // STAGE 4: Gom theo champion
+  // STAGE 4: Group by champion
   {
     $group: {
       _id:        "$teams.players.champion",
@@ -46,12 +46,12 @@ const pipeline = [
       avg_deaths:  { $avg: "$teams.players.deaths"  },
       avg_assists: { $avg: "$teams.players.assists" },
       avg_gold:    { $avg: "$teams.players.gold_earned" },
-      // Gom tên player thường dùng tướng này
+      // Collect names of players who used this champion
       players_used: { $addToSet: "$teams.players.name" },
     },
   },
 
-  // STAGE 5: Tính win rate và KDA
+  // STAGE 5: Compute win rate and KDA
   {
     $addFields: {
       win_rate: {
@@ -73,7 +73,7 @@ const pipeline = [
     },
   },
 
-  // STAGE 6: Sắp xếp theo pick_count giảm dần
+  // STAGE 6: Sort by pick_count descending
   { $sort: { pick_count: -1 } },
 
   // STAGE 7
@@ -106,7 +106,7 @@ async function runChampionsPipeline() {
     console.log("=".repeat(60));
 
     const results = await collection.aggregate(pipeline).toArray();
-    console.log(`\nTổng tướng: ${results.length}\n`);
+    console.log(`\nTotal champions: ${results.length}\n`);
     console.log("Champion         | Picks | Wins | Win%  | KDA  | Avg K/D/A");
     console.log("─".repeat(70));
 
@@ -118,7 +118,7 @@ async function runChampionsPipeline() {
     }); 
 
   } catch (err) {
-    console.error("✗ Lỗi:", err);
+    console.error("✗ Error:", err);
   } finally {
     await client.close();
   }

@@ -20,7 +20,7 @@ export default function Navbar() {
       gap:          "2rem",
       height:       "60px",
     }}>
-      {/* Logo trái */}
+      {/* Logo left */}
       <span style={{ color: "#e94560", fontWeight: 700, fontSize: "1.1rem", whiteSpace: "nowrap" }}>
         ⚔ Esports Analytics
       </span>
@@ -42,6 +42,7 @@ export default function Navbar() {
                 fontSize:       "0.9rem",
                 textDecoration: "none",
                 transition:     "all 0.2s",
+              // Navigation bar — displayed on all pages
               }}
             >
               {link.label}
@@ -50,7 +51,7 @@ export default function Navbar() {
         })}
       </div>
 
-      {/* Logo LOL phải */}
+      {/* Logo right */}
       <img
         src="/lol-logo.png"
         alt="League of Legends"

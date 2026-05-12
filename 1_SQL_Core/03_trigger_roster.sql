@@ -1,24 +1,24 @@
 -- ============================================================
 -- FILE: 03_trigger_roster.sql
--- MÔ TẢ: Trigger kiểm tra roster constraint
---        1 player KHÔNG được đăng ký 2 team trong cùng 1 season
---        Engine: MS SQL Server (T-SQL)
+-- DESC: Trigger to enforce roster constraint
+--       1 player CANNOT register for 2 teams in the same season
+--       Engine: MS SQL Server (T-SQL)
 --
--- THỨ TỰ CHẠY: Phải chạy SAU 01_schema.sql và 02_seed_data.sql
+-- RUN ORDER: Must run AFTER 01_schema.sql and 02_seed_data.sql
 --
--- LÝ DO DÙNG TRIGGER thay vì chỉ dùng UNIQUE constraint:
---   - UNIQUE constraint chỉ bắt lỗi SAU khi đã insert
---   - Trigger cho phép kiểm tra logic phức tạp TRƯỚC khi insert
---   - Trigger có thể trả về thông báo lỗi rõ ràng hơn
---   - Trigger không thể bypass từ application code
+-- WHY USE TRIGGER instead of UNIQUE constraint alone:
+--   - UNIQUE constraint only catches errors AFTER insert
+--   - Trigger allows complex logic checks BEFORE insert
+--   - Trigger can return clearer error messages
+--   - Trigger cannot be bypassed from application code
 --
--- LOẠI TRIGGER: INSTEAD OF INSERT
---   → Fire TRƯỚC khi INSERT thật sự xảy ra
---   → Nếu vi phạm: rollback + raise error
---   → Nếu hợp lệ: thực hiện INSERT
+-- TRIGGER TYPE: INSTEAD OF INSERT
+--   → Fires BEFORE the actual INSERT occurs
+--   → If violation: rollback + raise error
+--   → If valid: perform INSERT
 -- ============================================================
 
--- Xóa trigger cũ nếu tồn tại
+-- Drop existing trigger if it exists
 USE esports_db;
 GO
 IF OBJECT_ID('dbo.TR_Roster_PreventDuplicate', 'TR') IS NOT NULL
@@ -30,29 +30,29 @@ ON dbo.Rosters
 INSTEAD OF INSERT
 AS
 BEGIN
-    -- Tắt thông báo "X rows affected" để output gọn hơn
+    -- Suppress "X rows affected" messages for cleaner output
     SET NOCOUNT ON;
 
     -- --------------------------------------------------------
-    -- BƯỚC 1: Kiểm tra xem player đã đăng ký team nào
-    --         trong season này chưa
+    -- STEP 1: Check if player already registered for any team
+    --         in this season
     --
-    -- Logic: JOIN bảng inserted (data đang được insert)
-    --        với bảng Rosters hiện có
-    --        Nếu tìm thấy trùng → vi phạm constraint
+    -- Logic: JOIN inserted table (data being inserted)
+    --        with existing Rosters table
+    --        If a match is found → constraint violation
     -- --------------------------------------------------------
     IF EXISTS (
         SELECT 1
-        FROM inserted i                          -- data đang muốn insert
-        JOIN dbo.Rosters r                       -- data đã tồn tại trong DB
-            ON i.player_id = r.player_id         -- cùng player
-            AND i.season_id = r.season_id        -- cùng season
-        -- KHÔNG check team_id vì dù khác team cũng không được
+        FROM inserted i                          -- data being inserted
+        JOIN dbo.Rosters r                       -- data already in DB
+            ON i.player_id = r.player_id         -- same player
+            AND i.season_id = r.season_id        -- same season
+        -- NOT checking team_id because different teams are also not allowed
     )
     BEGIN
         -- --------------------------------------------------------
-        -- VI PHẠM: Player đã thuộc team khác trong season này
-        -- Lấy thông tin để in ra thông báo lỗi rõ ràng
+        -- VIOLATION: Player already belongs to another team this season
+        -- Retrieve info to print a clear error message
         -- --------------------------------------------------------
         DECLARE @playerNick  NVARCHAR(100);
         DECLARE @seasonName  NVARCHAR(100);
@@ -72,9 +72,9 @@ BEGIN
         JOIN dbo.Teams t_exist   ON r_exist.team_id = t_exist.team_id
         JOIN dbo.Teams t_new     ON i.team_id       = t_new.team_id;
 
-        -- Raise error — số -20001 là custom error code
+        -- Raise error — -20001 is a custom error code
         RAISERROR(
-            N'[TRIGGER LỖI] Player "%s" đã đăng ký cho "%s" trong season "%s". Không thể đăng ký thêm cho "%s".',
+            N'[TRIGGER ERROR] Player "%s" is already registered for "%s" in season "%s". Cannot also register for "%s".',
             16,   -- severity level (16 = user error)
             1,    -- state
             @playerNick,
@@ -83,12 +83,12 @@ BEGIN
             @newTeam
         );
 
-        -- Dừng lại, KHÔNG thực hiện INSERT
+        -- Stop, do NOT perform INSERT
         RETURN;
     END
 
     -- --------------------------------------------------------
-    -- BƯỚC 2: Hợp lệ → Thực hiện INSERT thật sự
+    -- STEP 2: Valid → Perform the actual INSERT
     -- --------------------------------------------------------
     INSERT INTO dbo.Rosters (
         player_id,
@@ -103,81 +103,81 @@ BEGIN
         team_id,
         season_id,
         jersey_number,
-        ISNULL(join_date, GETDATE()),  -- nếu không truyền join_date thì dùng ngày hôm nay
-        ISNULL(is_starter, 1)          -- mặc định là starter
+        ISNULL(join_date, GETDATE()),  -- default to today if join_date not provided
+        ISNULL(is_starter, 1)          -- default to starter
     FROM inserted;
 
-    PRINT N'Đăng ký roster thành công!';
+    PRINT N'Roster registered successfully!';
 END;
 GO
 
 -- ============================================================
--- TEST CASES — Chạy từng block để kiểm tra trigger
+-- TEST CASES — Run each block to test trigger
 -- ============================================================
 
 PRINT N'';
 PRINT N'============================================================';
-PRINT N'TEST 1: Insert hợp lệ — player mới chưa đăng ký season nào';
+PRINT N'TEST 1: Valid insert — new player not yet registered for any season';
 PRINT N'============================================================';
 
--- Thêm 1 player mới để test
+-- Add a new player for testing
 INSERT INTO Players (player_code, nickname, role) VALUES
 ('TEST1', N'TestPlayer', N'ADC');
 
 DECLARE @newPlayerId INT = SCOPE_IDENTITY();
 
--- Đăng ký player mới vào SP, season 1 → phải THÀNH CÔNG
+-- Register new player into team 1, season 1 → should SUCCEED
 INSERT INTO Rosters (player_id, team_id, season_id, jersey_number)
 VALUES (@newPlayerId, 1, 1, 99);
 
-PRINT N'→ Kết quả mong đợi: Thành công';
+PRINT N'→ Expected result: Success';
 
 -- --------------------------------------------------------
 PRINT N'';
 PRINT N'============================================================';
-PRINT N'TEST 2: Insert VI PHẠM — cùng player, cùng season, team khác';
-PRINT N'Đây là race condition mà trigger phải chặn được';
+PRINT N'TEST 2: VIOLATION insert — same player, same season, different team';
+PRINT N'This is the race condition the trigger must block';
 PRINT N'============================================================';
 
--- Thử đăng ký cùng player đó vào TF (team khác) trong cùng season 1
--- → Trigger phải RAISE ERROR và KHÔNG insert
+-- Try to register same player to a different team in the same season 1
+-- → Trigger must RAISE ERROR and NOT insert
 BEGIN TRY
     INSERT INTO Rosters (player_id, team_id, season_id, jersey_number)
-    VALUES (@newPlayerId, 2, 1, 88);  -- team_id=2 là Team Flash
+    VALUES (@newPlayerId, 2, 1, 88);  -- team_id=2 is Team Flash
 
-    PRINT N'→ Kết quả: INSERT thành công (SAI — trigger không hoạt động!)';
+    PRINT N'→ Result: INSERT succeeded (WRONG — trigger did not work!)';
 END TRY
 BEGIN CATCH
-    PRINT N'→ Kết quả mong đợi: Trigger đã chặn thành công!';
-    PRINT N'→ Lỗi: ' + ERROR_MESSAGE();
+    PRINT N'→ Expected result: Trigger blocked successfully!';
+    PRINT N'→ Error: ' + ERROR_MESSAGE();
 END CATCH;
 
 -- --------------------------------------------------------
 PRINT N'';
 PRINT N'============================================================';
-PRINT N'TEST 3: Insert hợp lệ — cùng player nhưng season KHÁC';
-PRINT N'Player được phép đổi team khi sang season mới';
+PRINT N'TEST 3: Valid insert — same player but DIFFERENT season';
+PRINT N'Player is allowed to switch teams in a new season';
 PRINT N'============================================================';
 
--- Season 2 (AIC 2024) — player này chưa đăng ký season 2
--- → phải THÀNH CÔNG dù đã đăng ký SP ở season 1
+-- Season 2 (AIC 2024) — player not yet registered for season 2
+-- → should SUCCEED even though already registered in season 1
 INSERT INTO Rosters (player_id, team_id, season_id, jersey_number)
 VALUES (@newPlayerId, 2, 2, 77);  -- team TF, season 2
 
-PRINT N'→ Kết quả mong đợi: Thành công (khác season = được phép)';
+PRINT N'→ Expected result: Success (different season = allowed)';
 
 -- --------------------------------------------------------
 PRINT N'';
 PRINT N'============================================================';
-PRINT N'VERIFY: Xem roster của TestPlayer sau 3 test';
-PRINT N'Phải thấy đúng 2 dòng: SP/season1 và TF/season2';
+PRINT N'VERIFY: Check TestPlayer roster after 3 tests';
+PRINT N'Should see exactly 2 rows: team1/season1 and team2/season2';
 PRINT N'============================================================';
 
 SELECT
     p.nickname      AS [Player],
     t.team_name     AS [Team],
     s.season_name   AS [Season],
-    r.jersey_number AS [Số áo]
+    r.jersey_number AS [Jersey Number]
 FROM Rosters r
 JOIN Players p ON r.player_id = p.player_id
 JOIN Teams   t ON r.team_id   = t.team_id
@@ -185,29 +185,29 @@ JOIN Seasons s ON r.season_id = s.season_id
 WHERE p.player_code = 'TEST1'
 ORDER BY s.season_name;
 
--- Dọn dẹp test data
+-- Clean up test data
 DELETE FROM Rosters WHERE player_id = @newPlayerId;
 DELETE FROM Players WHERE player_code = 'TEST1';
 PRINT N'';
-PRINT N'Test data đã được dọn dẹp.';
+PRINT N'Test data cleaned up.';
 GO
 
 -- ============================================================
 -- RACE CONDITION DEMO
--- Giải thích để defend oral:
+-- Explanation for oral defense:
 --
--- Nếu KHÔNG có Trigger, race condition xảy ra thế này:
---   T1: Team Flash  kiểm tra → Naul chưa có trong season 1 ✓
---   T2: Saigon Phantom kiểm tra → Naul chưa có trong season 1 ✓
---   T1: INSERT Naul vào Team Flash  ← thành công
---   T2: INSERT Naul vào Saigon Phantom ← cũng thành công!
---   → Naul giờ thuộc 2 team — DỮ LIỆU BỊ LỖI
+-- WITHOUT Trigger, race condition occurs like this:
+--   T1: Team Flash  checks → Naul not in season 1 
+--   T2: Saigon Phantom checks → Naul not in season 1 
+--   T1: INSERT Naul into Team Flash  ← succeeds
+--   T2: INSERT Naul into Saigon Phantom ← also succeeds!
+--   → Naul now belongs to 2 teams — DATA CORRUPTION
 --
--- Với Trigger INSTEAD OF INSERT:
---   → Mỗi INSERT được kiểm tra TRONG CÙNG TRANSACTION
---   → Transaction sau sẽ bị block bởi row-level lock
---   → Trigger đảm bảo chỉ 1 trong 2 INSERT thành công
+-- With INSTEAD OF INSERT Trigger:
+--   → Each INSERT is checked WITHIN THE SAME TRANSACTION
+--   → Later transaction is blocked by row-level lock
+--   → Trigger ensures only 1 of 2 INSERTs succeeds
 -- ============================================================
 PRINT N'';
-PRINT N'Trigger TR_Roster_PreventDuplicate đã được tạo thành công!';
+PRINT N'Trigger TR_Roster_PreventDuplicate created successfully!';
 GO

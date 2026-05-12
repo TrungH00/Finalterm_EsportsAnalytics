@@ -54,7 +54,7 @@ npm install mongodb
 node 01_seed.js
 
 ✅ Expected:
-Insert thành công: 22 documents
+Inserted successfully: 22 documents
 
 3️⃣ Run Backend API
 cd Backend_API

@@ -32,7 +32,7 @@ export default function ChampionsPage() {
   const highestWR   = data.length > 0 ? [...data].sort((a,b) => b.win_rate - a.win_rate)[0] : null;
   const highestKDA  = data.length > 0 ? [...data].sort((a,b) => b.kda_score - a.kda_score)[0] : null;
 
-  // Màu sắc theo pick rate
+  // Color by pick rate
   const getPickColor = (pick, max) => {
     const ratio = pick / max;
     if (ratio >= 0.7) return "#e94560";
@@ -45,7 +45,7 @@ export default function ChampionsPage() {
     <div className="page-wrapper">
       <h1 className="page-title">Champions <span>Analytics</span></h1>
 
-      {/* Stats tổng */}
+      {/* Summary stats */}
       <div className="stats-grid">
         <div className="stat-card">
           <div className="stat-value">{data.length}</div>
@@ -65,7 +65,7 @@ export default function ChampionsPage() {
         </div>
       </div>
 
-      {/* Champion Grid — tất cả tướng sắp xếp theo pick */}
+      {/* Champion Grid — all champions sorted by pick count */}
       {!loading && (
         <div style={{ marginBottom: "2rem" }}>
           <h2 style={{ fontSize: "16px", fontWeight: 500, color: "var(--color-text-secondary)", marginBottom: "12px" }}>
@@ -153,7 +153,7 @@ export default function ChampionsPage() {
         )}
       </div>
 
-      {/* Bảng xếp hạng chi tiết */}
+      {/* Detailed ranking table */}
       {loading ? (
         <div className="loading">Loading data from MongoDB...</div>
       ) : (

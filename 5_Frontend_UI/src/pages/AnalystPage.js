@@ -1,8 +1,8 @@
 // ============================================================
 // FILE: pages/AnalystPage.js — Screen 2: KDA Analytics
-// MÔ TẢ: Hiển thị KDA stats từ MongoDB pipeline
-//        Đây là màn hình của Member B
-//        Filter theo tournament
+// DESC: Display KDA stats from MongoDB pipeline
+//       This is Member B's screen
+//       Filter by tournament
 // ============================================================
 import { useState, useEffect } from "react";
 import { getKDAAll, getTeamAvg } from "../api/apiClient";
